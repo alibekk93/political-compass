@@ -175,6 +175,14 @@ votes, full pipeline — and recovers the truth at r = 0.99.
 
 ## Run it
 
+Get the data from [voteview.com/data](https://voteview.com/data) (Congress:
+"HSall" bulk files, roll call level) and place these three CSVs in `data/`
+(not tracked in git — 700MB+):
+
+- `HSall_votes.csv`
+- `HSall_members.csv`
+- `HSall_parties.csv`
+
 Dependencies are tracked in `pyproject.toml` — install with
 `pip install -e .` (add `.[dev]` for pytest + jupyter).
 
