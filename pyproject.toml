@@ -1,0 +1,33 @@
+[project]
+name = "political-compass"
+version = "0.1.0"
+description = "Cross-congress clustering of US Congress members from Voteview rollcall votes"
+readme = "README.md"
+requires-python = ">=3.11"
+# Verified against: numpy 2.5.1, pandas 3.0.3, scipy 1.18.0,
+# scikit-learn 1.9.0, matplotlib 3.11.1, pyarrow 25.0.0 (Python 3.13)
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "scipy>=1.11",
+    "scikit-learn>=1.4",
+    "matplotlib>=3.8",
+    "pyarrow>=15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "jupyter>=1.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
