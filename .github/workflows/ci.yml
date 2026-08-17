@@ -1,0 +1,17 @@
+name: tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      # not .[dev]: that pulls all of jupyter, which CI has no use for
+      - run: pip install -e . pytest
+      # test_synthetic simulates its own votes; test_split_half needs the 700MB
+      # Voteview cache and skips itself without one
+      - run: pytest tests/test_synthetic.py -v

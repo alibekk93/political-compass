@@ -3,13 +3,14 @@
 Scale the even-indexed and odd-indexed rollcalls of a congress separately,
 map one half onto the other with a similarity Procrustes fit, and check the
 two independent position estimates agree. Requires the parquet cache
-(`python -m src.pipeline` builds it). Runnable directly or via pytest.
+(`python -m political_compass.pipeline` builds it). Runnable directly or via
+pytest.
 """
 from __future__ import annotations
 
 import numpy as np
 
-from src import alignment, data_io, scaling
+from political_compass import alignment, data_io, scaling
 
 CONGRESSES = [119, 100, 80, 60, 40, 20]
 
@@ -35,6 +36,12 @@ def split_half_r(chamber: str, congress: int) -> tuple[float, int]:
 
 
 def test_split_half_reliability():
+    if not data_io.MANIFEST.exists():
+        # No cache means no real data (CI). Skip honestly rather than passing
+        # vacuously or dying in build_cache with a FileNotFoundError.
+        import pytest
+
+        pytest.skip("parquet cache absent; run python -m political_compass.pipeline")
     rows = []
     for chamber in ("House", "Senate"):
         available = set(data_io.available_congresses(chamber))

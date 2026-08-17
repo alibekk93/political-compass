@@ -182,9 +182,8 @@ def fig_trajectories(positions: pd.DataFrame, path: Path, chamber: str, n_member
     plt.close(fig)
 
 
-def make_all(positions: pd.DataFrame, diag: pd.DataFrame, outdir: Path, chamber: str) -> list[Path]:
+def make_all(positions: pd.DataFrame, diag: pd.DataFrame, figdir: Path, chamber: str) -> list[Path]:
     apply_style()
-    figdir = outdir / "figures"
     figdir.mkdir(parents=True, exist_ok=True)
     jobs = [
         (fig_small_multiples, f"{chamber}_compass_small_multiples.png"),

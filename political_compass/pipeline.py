@@ -1,8 +1,8 @@
 """End-to-end pipeline: cache -> scale -> align -> cluster -> outputs.
 
 Usage:
-    python -m src.pipeline --chamber House
-    python -m src.pipeline --chamber both --no-figures
+    python -m political_compass.pipeline --chamber House
+    python -m political_compass.pipeline --chamber both --no-figures
 """
 from __future__ import annotations
 
@@ -16,7 +16,9 @@ import pandas as pd
 from . import alignment, clustering, data_io, scaling, viz
 
 
-def run_chamber(chamber: str, outdir: Path, make_figures: bool = True) -> pd.DataFrame:
+def run_chamber(
+    chamber: str, outdir: Path, figdir: Path, make_figures: bool = True
+) -> pd.DataFrame:
     t0 = time.time()
     congresses = data_io.available_congresses(chamber)
     print(f"[{chamber}] scaling {len(congresses)} congresses ...")
@@ -92,8 +94,8 @@ def run_chamber(chamber: str, outdir: Path, make_figures: bool = True) -> pd.Dat
           f"{positions['bloc'].nunique()} bloc lineages)")
 
     if make_figures:
-        for p in viz.make_all(positions, diag, outdir, chamber):
-            print(f"[{chamber}] figure: {p.relative_to(outdir.parent)}")
+        for p in viz.make_all(positions, diag, figdir, chamber):
+            print(f"[{chamber}] figure: {p.name}")
     print(f"[{chamber}] done in {time.time() - t0:.0f}s")
     return positions
 
@@ -101,7 +103,10 @@ def run_chamber(chamber: str, outdir: Path, make_figures: bool = True) -> pd.Dat
 def main() -> None:
     ap = argparse.ArgumentParser(description="Cross-congress voting-space pipeline")
     ap.add_argument("--chamber", choices=["House", "Senate", "both"], default="House")
-    ap.add_argument("--outdir", default=str(data_io.PROJECT_ROOT / "output"))
+    ap.add_argument("--outdir", default=str(data_io.PROJECT_ROOT / "output"),
+                    help="positions/diagnostics CSVs (git-ignored)")
+    ap.add_argument("--figdir", default=str(data_io.PROJECT_ROOT / "paper" / "figures"),
+                    help="figures (tracked, so the manuscript renders on GitHub)")
     ap.add_argument("--no-figures", action="store_true")
     ap.add_argument("--force-cache", action="store_true",
                     help="re-parse the raw CSV even if the cache exists")
@@ -110,7 +115,8 @@ def main() -> None:
     data_io.build_cache(force=args.force_cache)
     chambers = ["House", "Senate"] if args.chamber == "both" else [args.chamber]
     for chamber in chambers:
-        run_chamber(chamber, Path(args.outdir), make_figures=not args.no_figures)
+        run_chamber(chamber, Path(args.outdir), Path(args.figdir),
+                    make_figures=not args.no_figures)
 
 
 if __name__ == "__main__":

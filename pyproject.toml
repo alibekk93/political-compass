@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "Cross-congress clustering of US Congress members from Voteview rollcall votes"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "alibekk93" }]
 # Verified against: numpy 2.5.1, pandas 3.0.3, scipy 1.18.0,
 # scikit-learn 1.9.0, matplotlib 3.11.1, pyarrow 25.0.0 (Python 3.13)
 dependencies = [
@@ -21,13 +24,16 @@ dev = [
     "jupyter>=1.0",
 ]
 
+[project.urls]
+Repository = "https://github.com/alibekk93/political-compass"
+
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]  # >=77 for the SPDX `license` string
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["src"]
+packages = ["political_compass"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["."]  # so `pytest` works in a clone that hasn't `pip install -e .`

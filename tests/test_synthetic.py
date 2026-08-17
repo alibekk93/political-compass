@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from src import alignment, clustering, scaling
+from political_compass import alignment, clustering, scaling
 
 
 def simulate(

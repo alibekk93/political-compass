@@ -91,7 +91,7 @@ On the real record, split-half reliability is uniformly high (Table 2): mean r =
 
 ### 4.2 Two centuries in one frame
 
-![House small multiples](output/figures/House_compass_small_multiples.png)
+![House small multiples](figures/House_compass_small_multiples.png)
 
 **Figure 1.** The House in the common voting space at twelve moments, 1789–2027, colored by bloc lineage (top four lineages by membership; all others gray). Structure crystallizes from the diffuse founding era into the persistent two-bloc pattern, with the modern panels showing extreme cluster compactness.
 
@@ -108,7 +108,7 @@ Figure 1 shows the House at twelve moments. The founding congresses are diffuse,
 | 1933–1981 | 0.64 / 0.57 | 0.61 / 0.55 | 3.2 / 2.7 | 0.28 / 0.34 |
 | 1981–2027 | 0.85 / 0.82 | 0.80 / 0.77 | 6.5 / 5.7 | 0.15 / 0.21 |
 
-![House eigenvalue spectrum](output/figures/House_eigen_spectrum.png)
+![House eigenvalue spectrum](figures/House_eigen_spectrum.png)
 
 **Figure 2.** Share of top-ten eigenvalue mass by dimension and congress (House). A dark first row means voting is nearly one-dimensional; the second dimension carries visible mass in the antebellum and mid-twentieth-century eras and almost none after 1980.
 
@@ -116,7 +116,7 @@ The eigenvalue spectra (Figure 2, Table 3) reproduce the dimensionality narrativ
 
 ### 4.3 The polarization trajectory
 
-![House polarization timeline](output/figures/House_polarization_timeline.png)
+![House polarization timeline](figures/House_polarization_timeline.png)
 
 **Figure 3.** Two-cluster separation (top) and k = 2 silhouette (bottom) by congress, House. The Gilded-Age peak, mid-twentieth-century trough, and modern surge emerge with no party labels in the pipeline.
 
@@ -141,13 +141,13 @@ Figure 3 traces the separation index and silhouette across all 119 Houses. Three
 
 The lineage output (Table 4) is the pipeline's most historically legible product. In the House, one lineage runs unbroken through all 119 congresses — consistent with the conventional genealogy of the Democratic line — while the opposition lineage runs 1789–1951 and is succeeded by a new lineage founded in 1949, precisely the years of the Dixiecrat revolt and the mid-century scramble of the second cluster. Among the small ephemeral House blocs, one lives exactly 1849–1853, the Free Soil interlude. In the Senate, whose smaller membership makes chains easier to break, the record fractures at historically meaningful joints: separate lineages for the Federalist era (to 1819), the Adams/Whig opposition (1817–1855), and the early Republican years (1853–1875), with the two modern lineages founded at 1873–75 and 1935–37 — Reconstruction's end and the New Deal, the two great realignments. We stress the epistemic status of the last column of Table 4: the pipeline supplies only the dates and memberships; the identifications are ours, and confirming them requires the metadata join we have deliberately deferred.
 
-![House anchor residuals](output/figures/House_anchor_residuals.png)
+![House anchor residuals](figures/House_anchor_residuals.png)
 
 **Figure 4.** Mean anchor residual after alignment, by congress (House). Returning members moved most during the collapse of the first party system (peak 0.94 at the 14th Congress, 1815–17) and move least today (~0.1–0.15).
 
 The anchor residual (Figure 4) independently corroborates this periodization: it peaks at 0.94 in the 14th Congress (1815), amid the Federalist collapse — in the Senate the maximum, 0.99, lands on the 17th (1821) — remains elevated through every nineteenth-century realignment, and decays to 0.15–0.21 in the modern era, whose members are extraordinarily stable. Individual careers (Figure 5) show the same stability at the micro level: long-serving members trace compact paths within their bloc, with drift concentrated in the members who lived through realignment decades.
 
-![House trajectories](output/figures/House_trajectories.png)
+![House trajectories](figures/House_trajectories.png)
 
 **Figure 5.** Career trajectories of the six longest-serving House members in the common space (all member-congress observations in gray).
 
@@ -165,7 +165,7 @@ Using only who voted with whom, a three-stage pipeline — independent per-congr
 
 ## Data and code availability
 
-All code is in the project repository (`src/`), with the pipeline invoked as `python -m src.pipeline --chamber both`; positions, diagnostics, and figures are written to `output/`. Raw data is the public Voteview `HSall_votes.csv`. Synthetic and split-half validations run as `python -m tests.test_synthetic` and `python -m tests.test_split_half`.
+All code is in the project repository (`political_compass/`), with the pipeline invoked as `python -m political_compass.pipeline --chamber both`; positions and diagnostics are written to `output/`, figures to `paper/figures/`. Raw data is the public Voteview `HSall_votes.csv`. Synthetic and split-half validations run as `python -m tests.test_synthetic` and `python -m tests.test_split_half`.
 
 ## References
 

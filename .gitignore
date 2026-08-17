@@ -4,5 +4,11 @@ __pycache__/
 .venv/
 .pytest_cache/
 .ipynb_checkpoints/
-data/
+# raw + cached Voteview data (~700MB); only the instructions stub is tracked.
+# `data/*` not `data/`: git won't descend into an excluded directory, so the
+# negation below would never be reached.
+data/*
+!data/README.md
+# generated positions/diagnostics CSVs. Figures live in paper/figures/ so the
+# manuscript renders on GitHub.
 output/

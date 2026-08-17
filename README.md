@@ -11,23 +11,26 @@ as anchors** (Voteview's `icpsr` id is stable across a member's career). Adjacen
 congresses share plenty of members (House 118→119: 375 of ~450; even 1869: 121),
 so every link in the chain is well-determined.
 
+📄 **[Read the manuscript](paper/manuscript.md)** — full write-up with figures and
+results. This README covers the method and how to run it.
+
 ## Method
 
-1. **Preprocess** (`src/data_io.py`) — one-time parse of `data/HSall_votes.csv`
+1. **Preprocess** (`political_compass/data_io.py`) — one-time parse of `data/HSall_votes.csv`
    (26.4M rows) into per-(chamber, congress) parquet caches. Yea variants → +1,
    Nay variants → −1, everything else missing; near-unanimous rollcalls
    (minority < 2.5%) and members with < 20 votes dropped (Voteview conventions).
-2. **Per-congress scaling** (`src/scaling.py`) — member×member *agreement
+2. **Per-congress scaling** (`political_compass/scaling.py`) — member×member *agreement
    distances* (1 − share of agreements on jointly cast rollcalls; robust to
    missing votes, no imputation) → classical MDS → 2-D coordinates, plus the
    top-10 eigenvalue spectrum as a dimensionality diagnostic.
-3. **Alignment** (`src/alignment.py`) — each congress's cloud is normalized
+3. **Alignment** (`political_compass/alignment.py`) — each congress's cloud is normalized
    (centered, RMS radius 1), then chained backward from congress 119 with
    orthogonal Procrustes fits on shared-member anchors (a member's target is
    their position in the nearest later congress). A generalized-Procrustes
    refinement pass then re-fits every congress against per-member consensus
    positions until convergence, removing accumulated chain drift.
-4. **Clustering** (`src/clustering.py`) — per-congress KMeans (k chosen by
+4. **Clustering** (`political_compass/clustering.py`) — per-congress KMeans (k chosen by
    silhouette with a parsimony rule: smallest k within 0.02 of the best, and
    k > 2 solutions must have no cluster under 5% of members). Cluster labels are
    made continuous over time by Hungarian matching on shared members →
@@ -64,7 +67,7 @@ define distance = 1 − (share of those where they voted the same way):
   d = 3/5 = **0.60**. The denominator shrank instead of pretending the missing
   vote was information — this is why no imputation is needed.
 
-Doing this for all pairs gives a symmetric distance matrix ([scaling.py](src/scaling.py)
+Doing this for all pairs gives a symmetric distance matrix ([scaling.py](political_compass/scaling.py)
 `agreement_distance`, computed with two matrix multiplications):
 
 |   | A    | B    | C    | D    |
@@ -82,7 +85,7 @@ distances reproduce that matrix as closely as possible. Classical (Torgerson)
 MDS does this non-iteratively: square the distances, double-center the matrix
 (subtract row and column means — this converts distances into inner products),
 and take the top eigenvectors, each scaled by the square root of its
-eigenvalue ([scaling.py](src/scaling.py) `classical_mds`). For the toy matrix:
+eigenvalue ([scaling.py](political_compass/scaling.py) `classical_mds`). For the toy matrix:
 
 | member | dim1  | dim2  |
 |--------|-------|-------|
@@ -109,7 +112,7 @@ orientation. Scale each congress independently and one may come out with its
 left bloc on the right, or the whole cloud turned 40°. Raw `dim1` in congress
 60 and raw `dim1` in congress 61 are not the same axis, which is the whole
 obstacle to cross-era comparison. Each cloud is first normalized — centered,
-RMS radius 1 ([alignment.py](src/alignment.py) `normalize_cloud`) — because raw MDS
+RMS radius 1 ([alignment.py](political_compass/alignment.py) `normalize_cloud`) — because raw MDS
 scale isn't comparable across eras either; then the orientations are fixed
 using the members two congresses share.
 
@@ -140,7 +143,7 @@ member who genuinely moved is outvoted by the dozens to hundreds who didn't
 (House anchor pools: minimum 46, median ~280).
 
 **The chain.** Congress 119 is the reference frame. Congress 118 is aligned to
-it, 117 to the result, and so on back to 1789 ([alignment.py](src/alignment.py)
+it, 117 to the result, and so on back to 1789 ([alignment.py](political_compass/alignment.py)
 `chain_align`). A member's target is their position in the *nearest later*
 congress they appear in, so the anchor pool for congress t is the union of
 everyone serving in any later congress — members returning after a gap still
@@ -155,7 +158,7 @@ spikes exactly where history says it should (peak 0.94 at congress 14, the
 **Refinement.** A 118-link chain accumulates error like a game of telephone:
 each fit is off by a little noise, and by congress 30 the frame can be
 slightly twisted relative to congress 119. The generalized-Procrustes pass
-([alignment.py](src/alignment.py) `gpa_refine`) removes this: compute every
+([alignment.py](political_compass/alignment.py) `gpa_refine`) removes this: compute every
 member's *consensus* position (their mean across all congresses served), re-fit
 each congress against its members' consensus positions, recompute, repeat.
 This uses every multi-congress overlap simultaneously — congress 40 is now
@@ -177,9 +180,9 @@ votes, full pipeline — and recovers the truth at r = 0.99.
 
 Get the data from [voteview.com/data](https://voteview.com/data) (Congress:
 "HSall" bulk files, roll call level) and place these three CSVs in `data/`
-(not tracked in git — 700MB+):
+(not tracked in git — 700MB+; see [data/README.md](data/README.md) for details):
 
-- `HSall_votes.csv`
+- `HSall_votes.csv` — the only file the pipeline reads
 - `HSall_members.csv`
 - `HSall_parties.csv`
 
@@ -187,20 +190,24 @@ Dependencies are tracked in `pyproject.toml` — install with
 `pip install -e .` (add `.[dev]` for pytest + jupyter).
 
 ```bash
-python -m src.pipeline --chamber both     # House and Senate (~1.5 min total)
+python -m political_compass.pipeline --chamber both     # House and Senate (~1.5 min total)
 python -m tests.test_synthetic            # end-to-end recovery on simulated data
 python -m tests.test_split_half           # split-half reliability on real data
 ```
 
-Outputs land in `output/`:
+Tables land in `output/` (git-ignored, regenerate by re-running):
 
 - `positions_{chamber}.csv` — one row per member-congress:
   `congress, chamber, icpsr, dim1, dim2, cluster, bloc, n_votes`
 - `diagnostics_{chamber}.csv` — per congress: members/rollcalls kept, eigenvalue
   spectrum, chosen k, k=2 silhouette and cluster separation (polarization
   proxies), anchor count and post-alignment anchor residual
-- `output/figures/` — small-multiple maps of the space over time, polarization
-  timeline, anchor-residual timeline, eigenvalue heatmap, career trajectories
+
+Figures land in [paper/figures/](paper/figures/) — tracked in git, so the
+manuscript renders on GitHub: small-multiple maps of the space over time,
+polarization timeline, anchor-residual timeline, eigenvalue heatmap, career
+trajectories, for both chambers. Override either location with `--outdir` /
+`--figdir`.
 
 `notebooks/explore.ipynb` is a thin viewer over these files.
 
