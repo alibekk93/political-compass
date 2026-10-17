@@ -1,4 +1,4 @@
-"""End-to-end pipeline: cache -> scale -> align -> cluster -> outputs.
+"""End-to-end pipeline: cache -> scale -> align -> cluster -> label -> outputs.
 
 Usage:
     python -m political_compass.pipeline --chamber House
@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from . import alignment, clustering, data_io, scaling, viz
+from . import alignment, clustering, data_io, metadata, scaling, viz
 
 
 def run_chamber(
@@ -73,8 +73,22 @@ def run_chamber(
                 }
             )
     positions = pd.DataFrame(rows)
+    outdir.mkdir(parents=True, exist_ok=True)
 
-    diag = pd.DataFrame.from_dict(diag_rows, orient="index").sort_index()
+    # Metadata comes in only now, after everything fitted: names, parties,
+    # and dim1's sign (a reflection — no distance or bloc changes).
+    if metadata.available():
+        positions = metadata.attach(positions)
+        positions, flipped, gap = metadata.orient_axes(positions)
+        missing = int(positions["party"].isna().sum())
+        print(f"[{chamber}] joined member metadata ({missing} rows without a party); "
+              f"dim1 {'flipped' if flipped else 'kept'}: R - D gap {gap:.2f} in congress {ref}")
+        metadata.bloc_summary(positions).to_csv(outdir / f"blocs_{chamber}.csv", index=False)
+    else:
+        print(f"[{chamber}] {metadata.MEMBERS_CSV.name} absent: blocs unlabeled, "
+              f"axis signs by convention only")
+
+    diag =pd.DataFrame.from_dict(diag_rows, orient="index").sort_index()
     diag.index.name = "congress"
     for t, r in results.items():
         diag.loc[t, ["k", "silhouette_k2", "separation_k2"]] = (
@@ -86,7 +100,6 @@ def run_chamber(
         for t in diag.index
     ]
 
-    outdir.mkdir(parents=True, exist_ok=True)
     positions.to_csv(outdir / f"positions_{chamber}.csv", index=False)
     diag.to_csv(outdir / f"diagnostics_{chamber}.csv")
     print(f"[{chamber}] wrote {len(positions):,} member-congress positions "

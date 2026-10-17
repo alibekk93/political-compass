@@ -2,7 +2,8 @@
 
 Clusters members of the US Congress by voting behavior in a 2-D space that is
 **comparable across congresses (1789–2027)**, built only from the Voteview vote
-records — no names, parties, or issue labels used anywhere.
+records — no names, parties, or issue labels enter any fitted step. Member
+metadata is joined only afterward, to name blocs and orient dimension 1.
 
 The obstacle: each congress votes on different rollcalls, so vote matrices from
 different eras share no columns. The solution: scale each congress separately,
@@ -35,6 +36,14 @@ results. This README covers the method and how to run it.
    k > 2 solutions must have no cluster under 5% of members). Cluster labels are
    made continuous over time by Hungarian matching on shared members →
    persistent **bloc lineages** discovered without party labels.
+5. **Labeling, post hoc** (`political_compass/metadata.py`) — only after all of
+   the above, `HSall_members.csv` is joined on (congress, chamber, icpsr) to add
+   names, states and parties. Dimension 1 is reflected so Republicans sit on
+   the positive side in congress 119 — a global reflection, so no distance,
+   cluster or lineage changes. Each bloc lineage is labeled by its dominant
+   party per congress, run-length encoded over its life, with a purity score.
+   Dimension 2's sign stays conventional. The file's NOMINATE columns are never
+   read.
 
 ## Scaling and alignment in detail
 
@@ -101,7 +110,7 @@ most of the "distance mass", and the small negative one is normal — agreement
 distances aren't exactly Euclidean, so trailing eigenvalues can dip below zero
 and are simply not used. The eigenvalue *spectrum* is itself a finding: in the
 real House, dimension 1 carries ~90% of the top-10 eigenvalue mass in the
-2020s but only ~66% mid-century, when a genuine second dimension (the
+2020s but only ~64% mid-century, when a genuine second dimension (the
 conservative-coalition / civil-rights axis) was live.
 
 ### Alignment: putting 119 maps into one frame
@@ -165,12 +174,13 @@ This uses every multi-congress overlap simultaneously — congress 40 is now
 tied to congress 45 through a five-term member directly, not only through the
 chain. Convergence behaves like diffusion along the chain (the slow mode is
 the whole timeline gently "unbending"), needing ~2,900 iterations — cheap once
-vectorized, and stopping early matters: at iteration 100 positions are still
-up to 0.23 RMS-units from their converged values. Because the updates are
+vectorized, and stopping early matters: at iteration 100 the worst-placed
+congress is still 0.33 RMS-units from its converged position. Because the updates are
 rotations and translations only, each congress's internal shape is preserved
 exactly — refinement can't distort a congress, only re-orient it. Finally the
 frame is re-pinned to congress 119's orientation and signs are fixed
-deterministically (`fix_signs`).
+deterministically (`fix_signs`); dimension 1's sign is then set by party in
+the labeling step.
 
 The synthetic test ([tests/test_synthetic.py](tests/test_synthetic.py)) exercises
 exactly this machinery with known answers — simulated ideal points, simulated
@@ -182,12 +192,14 @@ Get the data from [voteview.com/data](https://voteview.com/data) (Congress:
 "HSall" bulk files, roll call level) and place these three CSVs in `data/`
 (not tracked in git — 700MB+; see [data/README.md](data/README.md) for details):
 
-- `HSall_votes.csv` — the only file the pipeline reads
-- `HSall_members.csv`
-- `HSall_parties.csv`
+- `HSall_votes.csv` — the only file the fitting reads
+- `HSall_members.csv`, `HSall_parties.csv` — joined after fitting to name
+  members and blocs and orient dimension 1 (optional: without them the run
+  completes unlabeled)
 
 Dependencies are tracked in `pyproject.toml` — install with
-`pip install -e .` (add `.[dev]` for pytest + jupyter).
+`pip install -e .` (add `.[dev]` for pytest, jupyter, and plotly + ipywidgets
+for the notebook dashboard).
 
 ```bash
 python -m political_compass.pipeline --chamber both     # House and Senate (~1.5 min total)
@@ -198,7 +210,12 @@ python -m tests.test_split_half           # split-half reliability on real data
 Tables land in `output/` (git-ignored, regenerate by re-running):
 
 - `positions_{chamber}.csv` — one row per member-congress:
-  `congress, chamber, icpsr, dim1, dim2, cluster, bloc, n_votes`
+  `congress, chamber, icpsr, dim1, dim2, cluster, bloc, n_votes`, plus
+  `state_abbrev, party_code, bioname, party` when the member file is present
+- `blocs_{chamber}.csv` — one row per bloc lineage: span, size, `label`
+  (dominant-party sequence, e.g. `Jackson → Democrat`), `purity` (share of
+  its member-congresses in that congress's dominant party) and `segments`
+  (the same sequence with congress ranges)
 - `diagnostics_{chamber}.csv` — per congress: members/rollcalls kept, eigenvalue
   spectrum, chosen k, k=2 silhouette and cluster separation (polarization
   proxies), anchor count and post-alignment anchor residual
@@ -209,7 +226,10 @@ polarization timeline, anchor-residual timeline, eigenvalue heatmap, career
 trajectories, for both chambers. Override either location with `--outdir` /
 `--figdir`.
 
-`notebooks/explore.ipynb` is a thin viewer over these files.
+`notebooks/explore.ipynb` is a thin viewer over these files, ending in an
+interactive plotly dashboard: the map or either dimension over time, filtered
+by chamber, years/congress, party and state, with member name search and a
+table of the rows shown.
 
 ## Validation
 
@@ -222,28 +242,42 @@ trajectories, for both chambers. Override either location with `--outdir` /
   eras in both chambers, worst 0.90).
 - **History checks (no labels used)**: the polarization U-curve emerges (high
   ~1900, low 1940s–70s, extreme today — House k=2 silhouette 0.9 in the 2020s);
-  a new House lineage appears in the 1850s exactly when the Republican Party
-  formed; Senate lineage breaks land on Reconstruction (1873–75) and the New
-  Deal (1935–37); anchor residuals spike at 1815–1823 (Federalist collapse) and
-  decay to ~0.1 today; dimension 1 carries 90% of the top-10 eigenvalue mass in
-  the modern House vs 66% mid-century.
+  Senate lineage breaks land on Reconstruction (1873–75) and the New Deal
+  (1935–37), and the House's on 1949; anchor residuals spike at 1815–1823
+  (Federalist collapse) and decay to ~0.1 today; dimension 1 carries 90% of the
+  top-10 eigenvalue mass in the modern House vs 64% mid-century.
+- **Post-hoc labels** (`blocs_{chamber}.csv`): every major lineage is a party
+  line (purity 0.79–0.98), but which party is not readable from dates alone.
+  The House lineage unbroken since 1789 is Federalist → Whig → Republican (the
+  Republican founding passes without a break), and the 1949 break is the
+  Democratic line splitting North/South. Against DW-NOMINATE's dimension 1
+  (comparison only, never read by the pipeline), the oriented dimension 1
+  correlates at 0.98 / 0.97 (House / Senate) since 1981.
 
 ## Caveats
 
 - **Chambers are separate spaces.** House and Senate never vote on the same
   rollcalls within a congress, so each chamber gets its own common space;
   unifying them via chamber-switchers is future work.
-- **Axis orientation is conventional, not semantic.** Signs are fixed
-  deterministically; "left/right" labels wait until member/party metadata is
-  joined (`HSall_members.csv`, deferred by design).
+- **Only dimension 1 is oriented, and only exactly in the modern era.** Its
+  positive side is the side Republicans occupy in congress 119, carried back
+  through the common frame. Further back the direction of party conflict
+  turns within the frame: ~20–35° off dimension 1 in the House after 1825,
+  30–50° in the Senate after 1861, and past 90° in the 1821–1859 Senate, where
+  party must be read as a direction in the plane. Dimension 2's sign is a
+  deterministic convention with no meaning.
+- **Presidents are in the data.** The vote file records presidents' announced
+  positions under both chambers' rollcalls, so they are scaled as extra rows
+  (49 House and 38 Senate president-congresses).
 - **Party switchers** get a new `icpsr` from Voteview, so they drop out of the
   anchor pool across the switch (harmless — their position genuinely jumps).
-- Short-lived small blocs in the lineage output can be genuine third parties or
-  clustering noise; check `bloc` spans against the era before interpreting.
+- Short-lived small blocs are mostly sectional splits within a party (Northern
+  vs Southern Democrats in 1945–47 and 1957–61; both parties in 1849–53) or
+  clustering noise; check their `label` and `purity` in `blocs_{chamber}.csv`
+  before interpreting.
 
 ## Future extensions
 
-- Join `HSall_members.csv` (names, parties) to label blocs and orient axes.
 - Unified House+Senate space through members who switched chambers.
 - Joint sparse-matrix factorization as a cross-check on the stitched space.
 - Issue interpretation of dimensions via `HSall_rollcalls.csv` metadata.

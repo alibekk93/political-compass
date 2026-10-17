@@ -17,6 +17,8 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
 
+from .data_io import first_year
+
 SURFACE = "#fcfcfb"
 PAGE = "#f9f9f7"
 INK = "#0b0b0b"
@@ -31,10 +33,6 @@ SEQ_RAMP = LinearSegmentedColormap.from_list(
     ["#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7", "#3987e5",
      "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b"],
 )
-
-
-def first_year(congress: int) -> int:
-    return 1787 + 2 * congress
 
 
 def apply_style() -> None:
@@ -79,6 +77,20 @@ def _bloc_colors(positions: pd.DataFrame) -> dict[int, str]:
     return colors
 
 
+def _bloc_names(positions: pd.DataFrame) -> dict[int, str]:
+    """`bloc 1 · Democrat` (plurality party over the bloc's whole life) when
+    member metadata is joined, else just `bloc 1`."""
+    if "party" not in positions:
+        return {int(b): f"bloc {b}" for b in positions["bloc"].unique()}
+    top = positions.groupby("bloc")["party"].agg(lambda p: p.mode().iloc[0] if p.notna().any() else "?")
+    return {int(b): f"bloc {b} · {p}" for b, p in top.items()}
+
+
+def _dim1_label(positions: pd.DataFrame) -> str:
+    # metadata.orient_axes always runs when party is joined
+    return "dimension 1 (Republican side →)" if "party" in positions else "dimension 1"
+
+
 def fig_small_multiples(positions: pd.DataFrame, path: Path, chamber: str, n_panels: int = 12):
     congresses = sorted(positions["congress"].unique())
     picks = sorted({congresses[i] for i in np.linspace(0, len(congresses) - 1, n_panels).round().astype(int)})
@@ -99,13 +111,15 @@ def fig_small_multiples(positions: pd.DataFrame, path: Path, chamber: str, n_pan
         ax.set_ylim(-2.6, 2.6)
         ax.set_xticks([-2, 0, 2])
         ax.set_yticks([-2, 0, 2])
-    handles = [plt.Line2D([], [], marker="o", ls="", color=c, label=f"bloc {b}")
+    names = _bloc_names(positions)
+    handles = [plt.Line2D([], [], marker="o", ls="", color=c, label=names[b])
                for b, c in sorted(colors.items()) if c != MUTED]
     handles.append(plt.Line2D([], [], marker="o", ls="", color=MUTED, label="other blocs"))
     fig.legend(handles=handles, loc="lower center", ncol=len(handles), bbox_to_anchor=(0.5, -0.01))
     fig.suptitle(f"{chamber}: members in the common voting space", fontweight="bold",
                  x=0.02, ha="left")
-    fig.tight_layout(rect=(0, 0.03, 1, 0.96))
+    fig.supxlabel(_dim1_label(positions), fontsize=9, color=INK_2, y=0.035)
+    fig.tight_layout(rect=(0, 0.05, 1, 0.96))
     fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
@@ -171,11 +185,12 @@ def fig_trajectories(positions: pd.DataFrame, path: Path, chamber: str, n_member
         ax.plot(g["dim1"], g["dim2"], color=LINE_SLOTS[slot], lw=2, alpha=0.9,
                 marker="o", ms=3.5, mec=SURFACE, mew=0.4)
         end = g.iloc[-1]
-        ax.annotate(f"icpsr {m}\n{first_year(g['congress'].min())}–{first_year(int(end['congress'])) + 2}",
+        who = end["bioname"] if pd.notna(end.get("bioname")) else f"icpsr {m}"
+        ax.annotate(f"{who}\n{first_year(g['congress'].min())}–{first_year(int(end['congress'])) + 2}",
                     (end["dim1"], end["dim2"]), textcoords="offset points", xytext=(6, 4),
                     fontsize=7.5, color=INK_2)
     ax.set_title(f"{chamber}: longest-serving members' paths through the common space")
-    ax.set_xlabel("dimension 1")
+    ax.set_xlabel(_dim1_label(positions))
     ax.set_ylabel("dimension 2")
     fig.tight_layout()
     fig.savefig(path, dpi=150, bbox_inches="tight")

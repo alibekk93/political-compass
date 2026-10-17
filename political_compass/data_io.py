@@ -26,6 +26,10 @@ MANIFEST = PROCESSED_DIR / "manifest.json"
 CHUNK_ROWS = 2_000_000
 
 
+def first_year(congress: int) -> int:
+    return 1787 + 2 * congress
+
+
 def build_cache(force: bool = False) -> dict:
     """One-time parse of the raw CSV into a parquet file per (chamber, congress)."""
     if MANIFEST.exists() and not force:

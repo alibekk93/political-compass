@@ -10,13 +10,23 @@ From [voteview.com/data](https://voteview.com/data), select **Congress**,
 
 | file | size | used for |
 |------|------|----------|
-| `HSall_votes.csv` | ~670 MB | **required** — 26.4M member-vote records, the only input the pipeline reads |
-| `HSall_members.csv` | ~6 MB | not read yet; for the deferred name/party labelling of blocs |
-| `HSall_parties.csv` | ~60 KB | not read yet; same |
+| `HSall_votes.csv` | ~670 MB | **required** — 26.4M member-vote records, the only input to anything fitted |
+| `HSall_members.csv` | ~6 MB | optional — joined after fitting for names, states and parties; orients dimension 1 and labels blocs |
+| `HSall_parties.csv` | ~60 KB | optional — party code → party name for the same labels |
 
-Only `HSall_votes.csv` is needed to run the pipeline. The `prob` column in it is
-an output of Voteview's own NOMINATE model and is deliberately never read — using
-it would make the label-free claim circular.
+Only `HSall_votes.csv` is needed to run the pipeline; without the other two the
+output is simply unlabeled. The `prob` column in the votes file and the
+`nominate_*` / `nokken_poole_*` columns in the members file are outputs of
+Voteview's own NOMINATE model and are deliberately never read — using them would
+make the label-free claim circular.
+
+Direct download links (the files Voteview's bulk-download page serves):
+
+```bash
+for f in votes members parties; do
+  curl -fL -o data/HSall_$f.csv https://voteview.com/static/data/out/$f/HSall_$f.csv
+done
+```
 
 ## Generated
 
