@@ -231,10 +231,18 @@ six issue areas, filling the post-2015 gap in Clausen coding from CRS policy
 areas. Rebuild it with `python -m political_compass.issue_mappings` (needs
 `data/HSall_rollcalls.json`); nothing in the pipeline reads it yet.
 
+`python -m political_compass.issue_stats` (optional, needs the member file and
+`data/HSall_rollcalls.json`) adds `issue_stats_{chamber}.csv` (per member-congress:
+share of votes against own party, overall and per Clausen area) and
+`agenda_{chamber}.csv` (per congress: roll calls per area) to `output/`.
+
 `notebooks/explore.ipynb` is a thin viewer over these files, ending in an
 interactive plotly dashboard: the map or either dimension over time, filtered
 by chamber, years/congress, party and state, with member name search and a
-table of the rows shown.
+table of the rows shown. With the issue tables present it also colors members
+by how often they vote against their party (overall or per issue area), shows
+what each congress voted on, and compares up to six members, picked by search
+or by clicking dots, through their issue profiles.
 
 ## Validation
 

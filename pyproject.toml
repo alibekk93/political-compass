@@ -22,9 +22,11 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "jupyter>=1.0",
-    # the notebook's interactive dashboard (verified with plotly 7.1.0, ipywidgets 8.1.9)
-    "plotly>=5.0",
+    # the notebook's interactive dashboard (verified with plotly 7.1.0, ipywidgets 8.1.9,
+    # anywidget 0.11.0; plotly's FigureWidget, which reports clicks, needs anywidget)
+    "plotly>=6.0",
     "ipywidgets>=8.0",
+    "anywidget>=0.9",
 ]
 
 [project.urls]

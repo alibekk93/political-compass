@@ -72,6 +72,28 @@ def vote_kind(bill_number: pd.Series) -> pd.Series:
     return pd.Series(kinds, index=bill_number.index)
 
 
+def rollcall_weights(rc: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Clausen-area weights per roll call of `rc` (default: every roll call), from
+    the roll call's own Clausen code, else its policy area (borrowed from the same
+    bill if missing), else its vote kind. Returns the six CLAUSEN_AREAS columns
+    (summing to 1) plus `source`: "clausen", "policy area", or the vote kind."""
+    rc = load_rollcalls() if rc is None else rc
+    areas = pd.read_csv(MAPPINGS_DIR / "crs_policy_area_to_clausen.csv", index_col="crs_policy_area")
+    kinds = pd.read_csv(MAPPINGS_DIR / "vote_kind_to_clausen.csv", index_col="vote_kind")
+    w = pd.get_dummies(rc["clausen"]).reindex(columns=CLAUSEN_AREAS, fill_value=0).astype(float)
+    source = pd.Series("clausen", index=rc.index)
+    todo = w.sum(axis=1) == 0
+    area = borrow_bill_area(rc, rc)
+    by_area = todo & area.isin(areas.index)
+    w.loc[by_area] = areas.loc[area[by_area], CLAUSEN_AREAS].to_numpy()
+    source[by_area] = "policy area"
+    rest = todo & ~by_area
+    kind = vote_kind(rc.loc[rest, "bill_number"])
+    w.loc[rest] = kinds.loc[kind, CLAUSEN_AREAS].to_numpy()
+    source[rest] = kind
+    return w.assign(source=source)
+
+
 def clausen_weights(df: pd.DataFrame, key: str) -> pd.DataFrame:
     """Per `key` value: roll-call count, majority Clausen area and its share,
     and the share in each Clausen area (the soft mapping)."""

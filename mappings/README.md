@@ -36,29 +36,23 @@ Same remaining columns as above. Kinds are tested in table order.
 
 ## Lookup order
 
-```python
-import pandas as pd
+`issue_mappings.rollcall_weights` applies these files to every roll call:
 
+1. congresses 1–113: the roll call's own Clausen code;
+2. otherwise its policy area (its own, or borrowed from the same bill's other roll calls),
+   via `crs_policy_area_to_clausen.csv`;
+3. otherwise its vote kind (nomination, treaty, no bill number, bill without area), via
+   `vote_kind_to_clausen.csv`.
+
+```python
 from political_compass import issue_mappings as im
 
-areas = pd.read_csv("mappings/crs_policy_area_to_clausen.csv", index_col="crs_policy_area")
-kinds = pd.read_csv("mappings/vote_kind_to_clausen.csv", index_col="vote_kind")
-rc = im.load_rollcalls()  # congress, chamber, rollnumber, bill_number, clausen, crs_policy_area
-
-# 1. congresses 1-113: the roll call's own Clausen code
-w = pd.get_dummies(rc["clausen"]).reindex(columns=im.CLAUSEN_AREAS, fill_value=0).astype(float)
-todo = w.sum(axis=1) == 0
-# 2. otherwise its policy area (its own, or borrowed from the same bill's other roll calls)
-area = im.borrow_bill_area(rc, rc)
-by_area = todo & area.isin(areas.index)
-w.loc[by_area] = areas.loc[area[by_area], im.CLAUSEN_AREAS].to_numpy()
-# 3. otherwise the kind of vote (nomination, treaty, no bill number, bill without area)
-rest = todo & ~by_area
-w.loc[rest] = kinds.loc[im.vote_kind(rc.loc[rest, "bill_number"]), im.CLAUSEN_AREAS].to_numpy()
+rc = im.load_rollcalls()     # congress, chamber, rollnumber, bill_number, clausen, crs_policy_area
+w = im.rollcall_weights(rc)  # six area weights per roll call, plus `source` (which step decided)
 ```
 
-`w` then holds one row of six weights per roll call. For a single label per roll call,
-use `clausen_majority` instead of the weights in steps 2–3, or take `w.idxmax(axis=1)`.
+For a single label per roll call, take `w[im.CLAUSEN_AREAS].idxmax(axis=1)`. Rows whose
+`source` is `bill without area` carry only the prior; drop them when that matters.
 
 ## How they were built
 
