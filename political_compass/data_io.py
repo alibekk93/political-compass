@@ -85,16 +85,9 @@ def load_votes(chamber: str, congress: int) -> pd.DataFrame:
     return pd.read_parquet(PROCESSED_DIR / f"{chamber}_{congress:03d}.parquet")
 
 
-def build_vote_matrix(
-    votes: pd.DataFrame, min_votes: int = 20, max_lopsided: float = 0.025
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Long ±1 votes -> dense member x rollcall matrix (int8; 0 = not cast).
-
-    Drops near-unanimous rollcalls (minority side < max_lopsided of casts —
-    they carry no discriminative signal) and then members with fewer than
-    min_votes casts on the surviving rollcalls (both are standard Voteview
-    conventions). Returns (icpsr ids, matrix, n_votes per member).
-    """
+def contested_rollcalls(votes: pd.DataFrame, max_lopsided: float = 0.025) -> pd.Index:
+    """Rollcall numbers whose minority side is at least max_lopsided of casts;
+    near-unanimous rollcalls carry no discriminative signal."""
     tot = votes.groupby("rollnumber").size()
     yea = (
         votes.loc[votes["vote"] == 1]
@@ -103,7 +96,19 @@ def build_vote_matrix(
         .reindex(tot.index, fill_value=0)
     )
     minority = np.minimum(yea, tot - yea) / tot
-    votes = votes[votes["rollnumber"].isin(minority.index[minority >= max_lopsided])]
+    return minority.index[minority >= max_lopsided]
+
+
+def build_vote_matrix(
+    votes: pd.DataFrame, min_votes: int = 20, max_lopsided: float = 0.025
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Long ±1 votes -> dense member x rollcall matrix (int8; 0 = not cast).
+
+    Drops near-unanimous rollcalls (`contested_rollcalls`) and then members
+    with fewer than min_votes casts on the surviving rollcalls (both are
+    standard Voteview conventions). Returns (icpsr ids, matrix, n_votes per member).
+    """
+    votes = votes[votes["rollnumber"].isin(contested_rollcalls(votes, max_lopsided))]
     n_votes = votes.groupby("icpsr").size()
     votes = votes[votes["icpsr"].isin(n_votes.index[n_votes >= min_votes])]
     if votes.empty:

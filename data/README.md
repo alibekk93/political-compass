@@ -13,12 +13,13 @@ From [voteview.com/data](https://voteview.com/data), select **Congress**,
 | `HSall_votes.csv` | ~670 MB | **required** — 26.4M member-vote records, the only input to anything fitted |
 | `HSall_members.csv` | ~6 MB | optional — joined after fitting for names, states and parties; orients dimension 1 and labels blocs |
 | `HSall_parties.csv` | ~60 KB | optional — party code → party name for the same labels |
+| `HSall_rollcalls.json` | ~178 MB | optional — roll-call topic tags (Clausen, Peltzman, issue codes, CRS policy areas), read only by `python -m political_compass.issue_mappings` to rebuild [mappings/](../mappings/). The CSV version has no tags. |
 
 Only `HSall_votes.csv` is needed to run the pipeline; without the other two the
-output is simply unlabeled. The `prob` column in the votes file and the
-`nominate_*` / `nokken_poole_*` columns in the members file are outputs of
-Voteview's own NOMINATE model and are deliberately never read — using them would
-make the label-free claim circular.
+output is simply unlabeled. The `prob` column in the votes file, the
+`nominate_*` / `nokken_poole_*` columns in the members file and the `nominate_*`
+fields in the roll-call file are outputs of Voteview's own NOMINATE model and
+are deliberately never read — using them would make the label-free claim circular.
 
 Direct download links (the files Voteview's bulk-download page serves):
 
@@ -26,6 +27,7 @@ Direct download links (the files Voteview's bulk-download page serves):
 for f in votes members parties; do
   curl -fL -o data/HSall_$f.csv https://voteview.com/static/data/out/$f/HSall_$f.csv
 done
+curl -fL -o data/HSall_rollcalls.json https://voteview.com/static/data/out/rollcalls/HSall_rollcalls.json
 ```
 
 ## Generated

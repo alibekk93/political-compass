@@ -226,6 +226,11 @@ polarization timeline, anchor-residual timeline, eigenvalue heatmap, career
 trajectories, for both chambers. Override either location with `--outdir` /
 `--figdir`.
 
+[mappings/](mappings/) (tracked) assigns every roll call, 1789–2027, to Clausen's
+six issue areas, filling the post-2015 gap in Clausen coding from CRS policy
+areas. Rebuild it with `python -m political_compass.issue_mappings` (needs
+`data/HSall_rollcalls.json`); nothing in the pipeline reads it yet.
+
 `notebooks/explore.ipynb` is a thin viewer over these files, ending in an
 interactive plotly dashboard: the map or either dimension over time, filtered
 by chamber, years/congress, party and state, with member name search and a
