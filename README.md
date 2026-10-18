@@ -241,8 +241,9 @@ interactive plotly dashboard: the map or either dimension over time, filtered
 by chamber, years/congress, party and state, with member name search and a
 table of the rows shown. With the issue tables present it also colors members
 by how often they vote against their party (overall or per issue area), shows
-what each congress voted on, and compares up to six members, picked by search
-or by clicking dots, through their issue profiles.
+what each congress voted on, compares up to six members (picked by search or by
+clicking dots) on a whole-career issue radar and profile bars, and lists the
+members most like a chosen one within the selected years.
 
 ## Validation
 
